@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en" style="--bs-primary: #007E46;--bs-primary-rgb: 0,126,70;--bs-secondary: #0F4A2F;--bs-secondary-rgb: 15,74,47;--bs-success: #5BE3A6;--bs-success-rgb: 91,227,166;--bs-info: #99FFD1;--bs-info-rgb: 153,255,209;--bs-warning: #CCFFE8;--bs-warning-rgb: 204,255,232;--bs-danger: #FFCC29;--bs-danger-rgb: 255,204,41;--bs-light: #FFFFFF;--bs-light-rgb: 255,255,255;--bs-dark: #000000;--bs-dark-rgb: 0,0,0;--bs-body-color: #858796;">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Dashboard - Moniposto</title>
+
+    <!-- Carregar arquivos estáticos -->
+    {% load static %}
+
+    <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/typicons/2.0.9/typicons.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/styles.min.css' %}">
+    <style>
+        canvas {
+            max-height: 400px;
+            margin: 20px 0;
+        }
+        .card {
+            border-left: 5px solid #007E46 !important;
+        }
+    </style>
+</head>
+<body id="page-top" style="--bs-primary: #007E46;--bs-secondary: #0F4A2F;">
+    <div id="wrapper">
+        <nav class="navbar align-items-start sidebar sidebar-dark accordion bg-gradient-primary p-0 navbar-dark" style="background: rgb(32,131,64); padding-bottom: 0px; margin-bottom: 78px;">
+            <div class="container-fluid d-flex flex-column p-0">
+                <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand m-0" href="{% url 'home' %}">
+                    <img class="border rounded-circle" src="{% static 'assets/img/ativos/logoreduzida.png' %}" width="32" height="32">
+                    <div class="sidebar-brand-icon rotate-n-15"></div>
+                    <div class="sidebar-brand-text mx-3"><span>Moniposto</span></div>
+                </a>
+                <hr class="sidebar-divider my-0">
+                <ul class="navbar-nav text-light" id="accordionSidebar">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="typcn typcn-home"></i><span>Home</span>
+                        </a>
+                        <a class="nav-link active" href="{% url 'dashboard' %}">
+                            <i class="typcn typcn-chart-pie"></i><span>Dashboard</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'rel' %}">
+                            <i class="typcn typcn-document-text"></i><span>Relatórios</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'indicadores' %}">
+                            <i class="typcn typcn-chart-bar"></i><span>Indicadores</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'metas' %}">
+                            <i class="typcn typcn-chart-line"></i><span>Metas</span>
+                        </a>
+                        <a class="nav-link" href="{% url 'admin' %}">
+                            <i class="typcn typcn-group"></i><span>Admin</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="text-center d-none d-md-inline">
+                    <button class="btn rounded-circle border-0" id="sidebarToggle" type="button"></button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="d-flex flex-column" id="content-wrapper">
+            <div id="content">
+                <nav class="navbar navbar-expand bg-white shadow mb-4 topbar">
+                    <div class="container-fluid">
+                        <button class="btn btn-link d-md-none rounded-circle me-3" id="sidebarToggleTop" type="button">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <ul class="navbar-nav flex-nowrap ms-auto">
+                            <li class="nav-item dropdown no-arrow">
+                                <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
+                                    <span class="d-none d-lg-inline me-2 text-gray-600 small">{{ request.user.username }}</span>
+                                    <img class="border rounded-circle img-profile" src="{% static 'assets/img/avatars/avatar1.png' %}" width="32" height="32">
+                                </a>
+                                <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
+                                    <a class="dropdown-item" href="{% url 'profile' %}"><i class="typcn typcn-user"></i> Perfil</a>
+                                    <form method="POST" action="{% url 'logout' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i> Sair
+                                        </button>
+                                    </form>                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <div class="container-fluid">
+                    <div class="d-sm-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-dark mb-0">Dashboard</h3>
+                        <a class="btn btn-primary btn-sm d-none d-sm-inline-block" role="button" href="{% url 'export_dashboard' %}" style="background: rgb(32,131,64);">
+                            <i class="fas fa-download fa-sm text-white-50"></i> Exportar
+                        </a>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="filter-indicador" class="form-label">Filtrar por Indicador</label>
+                            <select id="filter-indicador" class="form-control">
+                                <option value="">Todos</option>
+                                {% for indicador in indicadores %}
+                                    <option value="{{ indicador.nome_indicador }}">{{ indicador.nome_indicador }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Cards de Resumo -->
+                    <!-- Cards de Resumo -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div>
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Indicadores</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ indicadores|length }}</div>
+                                    </div>
+                                    <i class="fas fa-chart-bar card-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div>
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Soma Total Registrada</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"></div>
+                                    </div>
+                                    <i class="fas fa-dollar-sign card-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div>
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Registros</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800"></div>
+                                    </div>
+                                    <i class="fas fa-database card-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="totaisChart"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <canvas id="frequenciaChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <canvas id="evolucaoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Dados passados pela view
+        const indicadores = {{ indicadores|safe }};
+        const registrosEvolucao = {{ registros_evolucao|safe }};
+
+        // Cores padrão em tons de verde
+        const greenShades = ['#007E46', '#0F4A2F', '#5BE3A6', '#99FFD1', '#CCFFE8'];
+
+        // Gráfico de Totais por Indicador
+        const ctxTotais = document.getElementById('totaisChart').getContext('2d');
+        new Chart(ctxTotais, {
+            type: 'bar',
+            data: {
+                labels: indicadores.map(ind => ind.nome_indicador),
+                datasets: [{
+                    label:'',
+                    data: indicadores.map(ind => ind.total_valor || 0),
+                    backgroundColor: greenShades,
+                    borderColor: greenShades[0],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Totais por Indicador' }
+                }
+            }
+        });
+
+        // Gráfico de Frequência por Indicador
+        const ctxFrequencia = document.getElementById('frequenciaChart').getContext('2d');
+        new Chart(ctxFrequencia, {
+            type: 'pie',
+            data: {
+                labels: indicadores.map(ind => ind.nome_indicador),
+                datasets: [{
+                    data: indicadores.map(ind => ind.frequencia_count),
+                    backgroundColor: greenShades
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Registros por Indicador' }
+                }
+            }
+        });
+
+        // Gráfico de Evolução por Data
+        const ctxEvolucao = document.getElementById('evolucaoChart').getContext('2d');
+        new Chart(ctxEvolucao, {
+            type: 'line',
+            data: {
+                labels: registrosEvolucao.map(reg => reg.data_coleta),
+                datasets: [{
+                    label: 'Total por Data',
+                    data: registrosEvolucao.map(reg => reg.total),
+                    borderColor: greenShades[0],
+                    tension: 0.3,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: { display: true, text: 'Evolução dos Valores por Data' }
+                }
+            }
+        });
+
+        // Filtro de Indicadores
+        document.getElementById('filter-indicador').addEventListener('change', function() {
+            const filtro = this.value;
+            const filtrados = filtro ? indicadores.filter(ind => ind.nome_indicador === filtro) : indicadores;
+
+            // Atualiza Gráficos
+            ctxTotais.data.labels = filtrados.map(ind => ind.nome_indicador);
+            ctxTotais.data.datasets[0].data = filtrados.map(ind => ind.total_valor || 0);
+            ctxTotais.update();
+
+            ctxFrequencia.data.labels = filtrados.map(ind => ind.nome_indicador);
+            ctxFrequencia.data.datasets[0].data = filtrados.map(ind => ind.frequencia_count);
+            ctxFrequencia.update();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+</body>
+</html>
